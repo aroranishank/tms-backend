@@ -1,0 +1,29 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.config import CORS_ORIGINS
+from app.db_init import init_db
+from app.routers import auth, tasks, users, stats
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Create DB tables on startup
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+app.include_router(auth.router)
+app.include_router(tasks.router)
+app.include_router(users.router)
+app.include_router(stats.router)
+
+@app.get("/")
+def root():
+    return {"message": "Task Manager API running"}
