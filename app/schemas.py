@@ -16,6 +16,12 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     password: Optional[str] = None
 
+class AdminUserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    user_type: Optional[str] = None
+
 class UserOut(UserBase):
     id: int
     user_type: str
