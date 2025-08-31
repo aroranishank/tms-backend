@@ -13,8 +13,9 @@ def init_db():
         hashed_pw = security.get_password_hash("admin123")
         admin_user = models.User(
             username="admin",
+            email="admin@taskmanager.com",
             hashed_password=hashed_pw,
-            is_admin=True
+            user_type="admin"
         )
         db.add(admin_user)
         db.commit()
