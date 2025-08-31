@@ -17,4 +17,5 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         data={"sub": user.username},
         expires_delta=timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
+    print("Login Success", access_token);
     return {"access_token": access_token, "token_type": "bearer"}
