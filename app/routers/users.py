@@ -44,6 +44,16 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db), admin: 
 def list_users(db: Session = Depends(get_db), admin: models.User = Depends(get_current_admin)):
     return db.query(models.User).filter(models.User.is_deleted == False).all()
 
+@router.get("/{user_id}", response_model=schemas.UserOut)
+def get_user(user_id: int, db: Session = Depends(get_db), admin: models.User = Depends(get_current_admin)):
+    user = db.query(models.User).filter(
+        models.User.id == user_id,
+        models.User.is_deleted == False
+    ).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 @router.delete("/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db), admin: models.User = Depends(get_current_admin)):
     user = db.query(models.User).filter(

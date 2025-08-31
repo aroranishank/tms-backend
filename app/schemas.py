@@ -11,6 +11,11 @@ class UserCreate(UserBase):
     password: str
     user_type: str = "user"  # "user" or "admin", defaults to "user"
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+
 class UserOut(UserBase):
     id: int
     user_type: str
