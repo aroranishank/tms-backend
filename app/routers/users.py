@@ -83,12 +83,8 @@ def update_user(user_id: int, user_update: schemas.AdminUserUpdate, db: Session 
         if existing_email:
             raise HTTPException(status_code=400, detail="Email already exists")
     
-    # Validate user_type if being updated
-    if user_update.user_type and user_update.user_type not in ["user", "admin"]:
-        raise HTTPException(status_code=400, detail="user_type must be either 'user' or 'admin'")
-    
     # Prevent admin from demoting themselves
-    if user.id == admin.id and user_update.user_type == "user":
+    if user.id == admin.id and user_update.is_admin == False:
         raise HTTPException(status_code=400, detail="Cannot demote your own admin privileges")
     
     # Update fields
@@ -98,8 +94,8 @@ def update_user(user_id: int, user_update: schemas.AdminUserUpdate, db: Session 
         user.email = user_update.email
     if user_update.password is not None:
         user.hashed_password = security.get_password_hash(user_update.password)
-    if user_update.user_type is not None:
-        user.user_type = user_update.user_type
+    if user_update.is_admin is not None:
+        user.user_type = "admin" if user_update.is_admin else "user"
     
     db.commit()
     db.refresh(user)

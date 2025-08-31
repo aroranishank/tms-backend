@@ -20,7 +20,7 @@ class AdminUserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
-    user_type: Optional[str] = None
+    is_admin: Optional[bool] = None
 
 class UserOut(UserBase):
     id: int
@@ -43,6 +43,13 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     pass
 
+class AdminTaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    status: Optional[str] = "pending"
+    priority: Optional[str] = "medium"
+    due_date: Optional[datetime] = None
+
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
@@ -56,6 +63,15 @@ class TaskOut(TaskBase):
     id: int
     owner_id: int
     completion_datetime: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+
+class TaskWithUserOut(TaskBase):
+    id: int
+    owner_id: int
+    completion_datetime: Optional[datetime] = None
+    owner: UserOut
 
     class Config:
         orm_mode = True
