@@ -49,6 +49,8 @@ class AdminTaskCreate(BaseModel):
     status: Optional[str] = "pending"
     priority: Optional[str] = "medium"
     due_date: Optional[datetime] = None
+    start_datetime: Optional[datetime] = None
+    end_datetime: Optional[datetime] = None
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -63,6 +65,10 @@ class TaskOut(TaskBase):
     id: int
     owner_id: int
     completion_datetime: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    created_by: Optional[int] = None
+    updated_at: Optional[datetime] = None
+    updated_by: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -71,6 +77,10 @@ class TaskWithUserOut(TaskBase):
     id: int
     owner_id: int
     completion_datetime: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    created_by: Optional[int] = None
+    updated_at: Optional[datetime] = None
+    updated_by: Optional[int] = None
     owner: UserOut
 
     class Config:

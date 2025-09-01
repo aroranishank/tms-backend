@@ -35,7 +35,11 @@ def create_task_for_user(
         status=task.status,
         priority=task.priority,
         due_datetime=task.due_date,
-        owner_id=user_id
+        start_datetime=task.start_datetime,
+        end_datetime=task.end_datetime,
+        owner_id=user_id,
+        created_by=admin.id,
+        updated_by=admin.id
     )
     db.add(db_task)
     db.commit()
