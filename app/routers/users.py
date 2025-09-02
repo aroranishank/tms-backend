@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 from datetime import datetime
+from typing import Optional
 from app import models, schemas, security
 from app.deps import get_db, get_current_admin
 
@@ -50,9 +52,52 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db), admin: 
         else:
             raise HTTPException(status_code=400, detail="Data integrity error")
 
-@router.get("/", response_model=list[schemas.UserOut])
-def list_users(db: Session = Depends(get_db), admin: models.User = Depends(get_current_admin)):
-    return db.query(models.User).filter(models.User.is_deleted == False).all()
+@router.get("/", response_model=schemas.PaginatedUsersResponse)
+def list_users(
+    search: Optional[str] = Query(None, description="Search term for username or email"),
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(10, ge=1, le=100, description="Items per page"),
+    db: Session = Depends(get_db), 
+    admin: models.User = Depends(get_current_admin)
+):
+    query = db.query(models.User).filter(models.User.is_deleted == False)
+    
+    # Apply search filter
+    if search:
+        if search.strip() == "*":
+            # Wildcard search - return all users (no additional filter)
+            pass
+        elif search.strip():
+            # Case-insensitive LIKE search on username and email
+            search_term = f"%{search.strip()}%"
+            query = query.filter(
+                func.lower(models.User.username).like(func.lower(search_term)) |
+                func.lower(models.User.email).like(func.lower(search_term))
+            )
+    
+    # Get total count before pagination
+    total_count = query.count()
+    
+    # Apply pagination
+    offset = (page - 1) * limit
+    users = query.offset(offset).limit(limit).all()
+    
+    # Calculate pagination metadata
+    total_pages = (total_count + limit - 1) // limit
+    has_next = page < total_pages
+    has_previous = page > 1
+    
+    return {
+        "users": users,
+        "pagination": {
+            "current_page": page,
+            "total_pages": total_pages,
+            "total_items": total_count,
+            "items_per_page": limit,
+            "has_next": has_next,
+            "has_previous": has_previous
+        }
+    }
 
 @router.get("/{user_id}", response_model=schemas.UserOut)
 def get_user(user_id: int, db: Session = Depends(get_db), admin: models.User = Depends(get_current_admin)):

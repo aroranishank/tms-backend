@@ -30,6 +30,18 @@ class UserOut(UserBase):
     class Config:
         orm_mode = True
 
+class PaginationInfo(BaseModel):
+    current_page: int
+    total_pages: int
+    total_items: int
+    items_per_page: int
+    has_next: bool
+    has_previous: bool
+
+class PaginatedUsersResponse(BaseModel):
+    users: List[UserOut]
+    pagination: PaginationInfo
+
 # ---------- Task Schemas ----------
 class TaskBase(BaseModel):
     title: str
