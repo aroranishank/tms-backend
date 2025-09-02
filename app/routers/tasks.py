@@ -48,28 +48,28 @@ def update_task(task_id: int, updated: schemas.TaskUpdate, db: Session = Depends
     # Get update data
     update_data = updated.dict(exclude_unset=True)
     
-    # Restrict normal users to only update start_date and end_date
+    # Restrict normal users to only update start_datetime, end_datetime, and status
     if not current_user.is_admin:
-        allowed_fields = {"start_date", "end_date"}
+        allowed_fields = {"start_datetime", "end_datetime", "status"}
         restricted_fields = set(update_data.keys()) - allowed_fields
         if restricted_fields:
             raise HTTPException(
                 status_code=403, 
-                detail=f"Normal users can only update start_date and end_date. Restricted fields: {', '.join(restricted_fields)}"
+                detail=f"Normal users can only update start_datetime, end_datetime, and status. Restricted fields: {', '.join(restricted_fields)}"
             )
     
-    # Admin validations
+    # Auto-set completion_datetime when status changes to "completed"
+    if update_data.get("status") == "completed" and task.status != "completed":
+        update_data["completion_datetime"] = datetime.now(timezone.utc)
+    elif update_data.get("status") != "completed" and task.status == "completed":
+        # Clear completion_datetime if status changes from completed to something else
+        update_data["completion_datetime"] = None
+    
+    # Admin-only validations
     if current_user.is_admin:
         # Validate priority if provided
         if updated.priority and updated.priority not in ["low", "medium", "high", "urgent"]:
             raise HTTPException(status_code=400, detail="priority must be one of: low, medium, high, urgent")
-        
-        # Auto-set completion_datetime when status changes to "completed"
-        if update_data.get("status") == "completed" and task.status != "completed":
-            update_data["completion_datetime"] = datetime.now(timezone.utc)
-        elif update_data.get("status") != "completed" and task.status == "completed":
-            # Clear completion_datetime if status changes from completed to something else
-            update_data["completion_datetime"] = None
     
     # Set updated_by for all updates
     update_data["updated_by"] = current_user.id

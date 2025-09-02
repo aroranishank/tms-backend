@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from app import models, schemas, security
 from app.deps import get_db, get_current_admin
@@ -36,9 +37,18 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db), admin: 
         user_type=user.user_type
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    try:
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    except IntegrityError as e:
+        db.rollback()
+        if "username" in str(e.orig):
+            raise HTTPException(status_code=400, detail="Username already exists")
+        elif "email" in str(e.orig):
+            raise HTTPException(status_code=400, detail="Email already exists")
+        else:
+            raise HTTPException(status_code=400, detail="Data integrity error")
 
 @router.get("/", response_model=list[schemas.UserOut])
 def list_users(db: Session = Depends(get_db), admin: models.User = Depends(get_current_admin)):
@@ -97,9 +107,18 @@ def update_user(user_id: int, user_update: schemas.AdminUserUpdate, db: Session 
     if user_update.is_admin is not None:
         user.user_type = "admin" if user_update.is_admin else "user"
     
-    db.commit()
-    db.refresh(user)
-    return user
+    try:
+        db.commit()
+        db.refresh(user)
+        return user
+    except IntegrityError as e:
+        db.rollback()
+        if "username" in str(e.orig):
+            raise HTTPException(status_code=400, detail="Username already exists")
+        elif "email" in str(e.orig):
+            raise HTTPException(status_code=400, detail="Email already exists")
+        else:
+            raise HTTPException(status_code=400, detail="Data integrity error")
 
 @router.delete("/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db), admin: models.User = Depends(get_current_admin)):
