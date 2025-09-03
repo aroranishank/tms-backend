@@ -28,7 +28,7 @@ class UserOut(UserBase):
     is_admin: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PaginationInfo(BaseModel):
     current_page: int
@@ -69,6 +69,7 @@ class TaskUpdate(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None
     priority: Optional[str] = None
+    owner_id: Optional[int] = None  # Allow reassigning tasks (admin only)
     start_datetime: Optional[datetime] = None
     end_datetime: Optional[datetime] = None
     due_datetime: Optional[datetime] = None
@@ -83,7 +84,7 @@ class TaskOut(TaskBase):
     updated_by: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class TaskWithUserOut(TaskBase):
     id: int
@@ -96,7 +97,11 @@ class TaskWithUserOut(TaskBase):
     owner: UserOut
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class PaginatedTasksResponse(BaseModel):
+    tasks: List[TaskWithUserOut]
+    pagination: PaginationInfo
 
 # ---------- Auth Schemas ----------
 class Token(BaseModel):

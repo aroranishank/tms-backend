@@ -70,6 +70,17 @@ def update_task(task_id: int, updated: schemas.TaskUpdate, db: Session = Depends
         # Validate priority if provided
         if updated.priority and updated.priority not in ["low", "medium", "high", "urgent"]:
             raise HTTPException(status_code=400, detail="priority must be one of: low, medium, high, urgent")
+        
+        # Validate owner_id if provided (admin can reassign tasks)
+        if updated.owner_id is not None:
+            target_user = db.query(models.User).filter(
+                models.User.id == updated.owner_id,
+                models.User.is_deleted == False
+            ).first()
+            if not target_user:
+                raise HTTPException(status_code=400, detail="Target user not found")
+            if target_user.is_admin:
+                raise HTTPException(status_code=400, detail="Cannot assign tasks to admin users")
     
     # Set updated_by for all updates
     update_data["updated_by"] = current_user.id
