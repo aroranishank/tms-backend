@@ -1,17 +1,69 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
+from typing import Optional
 from app import models, schemas
 from app.deps import get_db, get_current_user
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
-@router.get("/", response_model=list[schemas.TaskOut])
-def get_my_tasks(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    return db.query(models.Task).filter(
+@router.get("/", response_model=schemas.PaginatedUserTasksResponse)
+def get_my_tasks(
+    search: Optional[str] = Query(None, description="Search term for task title or description"),
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(10, ge=1, le=100, description="Items per page"),
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get user's tasks with search and pagination"""
+    
+    # Base query for user's own tasks
+    query = db.query(models.Task).filter(
         models.Task.owner_id == current_user.id,
         models.Task.is_deleted == False
-    ).all()
+    )
+    
+    # Apply search filter if provided
+    if search:
+        if search.strip() == "*":
+            # "*" means get all user's tasks - no additional filter needed
+            pass
+        elif search.strip() == "":
+            # Empty string means no results
+            query = query.filter(False)
+        else:
+            # Search in task title and description using LIKE
+            search_term = f"%{search}%"
+            query = query.filter(
+                models.Task.title.ilike(search_term) | 
+                models.Task.description.ilike(search_term)
+            )
+    
+    # Get total count for pagination
+    total_items = query.count()
+    
+    # Calculate pagination
+    import math
+    total_pages = math.ceil(total_items / limit) if total_items > 0 else 1
+    offset = (page - 1) * limit
+    
+    # Apply pagination and order by creation date (newest first)
+    tasks = query.order_by(models.Task.created_at.desc()).offset(offset).limit(limit).all()
+    
+    # Build pagination info
+    pagination = schemas.PaginationInfo(
+        current_page=page,
+        total_pages=total_pages,
+        total_items=total_items,
+        items_per_page=limit,
+        has_next=page < total_pages,
+        has_previous=page > 1
+    )
+    
+    return schemas.PaginatedUserTasksResponse(
+        tasks=tasks,
+        pagination=pagination
+    )
 
 @router.post("/", response_model=schemas.TaskOut)
 def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):

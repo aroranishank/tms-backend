@@ -103,6 +103,10 @@ class PaginatedTasksResponse(BaseModel):
     tasks: List[TaskWithUserOut]
     pagination: PaginationInfo
 
+class PaginatedUserTasksResponse(BaseModel):
+    tasks: List[TaskOut]
+    pagination: PaginationInfo
+
 # ---------- Auth Schemas ----------
 class Token(BaseModel):
     access_token: str
