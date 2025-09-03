@@ -15,4 +15,4 @@ Below is the flow of a typical request from the frontend to the backend and back
 5. SQLAlchemy queries SQLite for tasks belonging to the logged-in user.
 6. Results are converted to JSON via Pydantic.
 7. Response is sent back to the frontend.
-8. React updates the UI with the retrieved tasks.
+8. React updates the UI with the retrieved tasks. 
